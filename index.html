@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اکانت سنتر - مرجع خرید و فروش اکانت</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Vazirmatn', 'sans-serif'] },
+                    colors: {
+                        skybrand: { 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+                        purplebrand: { 400: '#c084fc', 500: '#a855f7', 600: '#9333ea' },
+                        obsidian: { 900: '#040608', 800: '#06080d', 700: '#111724', card: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #06080d; color: #f1f5f9; overflow-x: hidden; background-image: radial-gradient(circle at 50% 0%, #111724 0%, #06080d 60%); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card-bg { background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #38bdf8; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #0ea5e9; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #475569; transition: all 0.3s; }
+        .toggle-label { width: 3rem; height: 1.5rem; background-color: #334155; border-radius: 9999px; transition: all 0.3s; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useRef, useEffect } = React;
+
+        const getOrCreateDeviceId = () => {
+            let deviceId = localStorage.getItem('ac_device_id');
+            if (!deviceId) {
+                deviceId = 'user-' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('ac_device_id', deviceId);
+            }
+            return deviceId;
+        };
+
+        const compressImage = (file, callback) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 500;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', 0.5));
+                };
+            };
+        };
+
+        const BrandLogo = ({ className = "w-full h-full", rounded = "rounded-xl" }) => (
+            <div className={`relative flex items-center justify-center bg-gradient-to-br from-[#1e293b] to-[#0f172a] border-2 border-skybrand-500/50 overflow-hidden shadow-[0_0_15px_rgba(56,189,248,0.3)] ${rounded} ${className}`}>
+                <svg viewBox="0 0 200 200" className="w-full h-full p-2 drop-shadow-lg">
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="#38bdf8" strokeWidth="4" />
+                    <path d="M100 25 L160 55 L160 125 Q100 175 100 175 Q40 125 40 125 L40 55 Z" fill="none" stroke="#38bdf8" strokeWidth="3" opacity="0.5" />
+                    <path d="M100 35 L150 60 L150 120 Q100 160 100 160 Q50 120 50 120 L50 60 Z" fill="#1e293b" stroke="#eab308" strokeWidth="3" />
+                    <text x="100" y="105" fill="#facc15" fontSize="32" fontWeight="900" fontFamily="sans-serif" textAnchor="middle" style={{textShadow: '0 0 10px rgba(250,204,21,0.5)'}}>AC</text>
+                    <text x="100" y="135" fill="#38bdf8" fontSize="14" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle" letterSpacing="2">CENTER</text>
+                </svg>
+            </div>
+        );
+
+        const formatPrice = (price) => {
+            if (price === 'طاق' || price === 'معاوضه' || price === 0 || price === '0') return 'طاق (معاوضه)';
+            return new Intl.NumberFormat('fa-IR').format(price);
+        };
+
+        const Header = ({ onOpenMenu, cartCount = 0, onGoHome }) => (
+            <header className="sticky top-0 z-40 bg-[#06080d]/95 backdrop-blur-md border-b border-white/5 px-4 py-3 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-full bg-skybrand-900/40 border border-skybrand-500/30 flex items-center justify-center text-skybrand-300 font-bold text-sm">{cartCount}</div>
+                    <button onClick={onOpenMenu} className="w-10 h-10 rounded-xl bg-transparent border border-white/10 flex items-center justify-center text-white hover:bg-white/5 transition-colors"><i className="fas fa-bars text-lg text-slate-300"></i></button>
+                </div>
+                <div onClick={onGoHome} className="flex items-center gap-3 cursor-pointer">
+                    <div className="text-right flex flex-col justify-center">
+                        <span className="font-bold text-base text-white tracking-wide leading-none mb-1">اکانت سنتر</span>
+                        <span className="text-[10px] text-skybrand-400 tracking-wider leading-none">Gaming Store</span>
+                    </div>
+                    <div className="w-10 h-10 rounded-2xl border-2 border-skybrand-500/30 p-0 flex items-center justify-center overflow-hidden shadow-[0_0_10px_rgba(56,189,248,0.2)] bg-black">
+                        <BrandLogo rounded="rounded-2xl" />
+                    </div>
+                </div>
+            </header>
+        );
+
+        const MobileNavDrawer = ({ isOpen, onClose, onSelectAction }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-start animate-fade-in" onClick={onClose}>
+                    <div className="w-[75%] max-w-xs bg-[#06080d] h-full flex flex-col overflow-y-auto border-r border-white/5 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-4 border-b border-white/5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-skybrand-500/10 flex items-center justify-center text-skybrand-400 border border-skybrand-500/30">
+                                    <i className="fas fa-shield-halved"></i>
+                                </div>
+                                <span className="font-bold text-white text-sm">منوی اکانت سنتر</span>
+                            </div>
+                            <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
+                        </div>
+                        <div className="p-4 grid grid-cols-2 gap-3">
+                            <button onClick={() => { onSelectAction('add_ad'); onClose(); }} className="p-4 bg-[#0f172a] border border-skybrand-500/30 rounded-2xl flex flex-col items-center justify-center gap-2 text-center relative">
+                                <span className="absolute top-2 right-2 text-[8px] bg-skybrand-500 text-black font-bold px-1.5 py-0.5 rounded-full">۱۰٪ کمیسیون</span>
+                                <div className="w-10 h-10 rounded-full bg-skybrand-500/20 flex items-center justify-center mb-1"><i className="fas fa-plus text-skybrand-400 text-lg"></i></div>
+                                <span className="text-xs text-white font-bold">ثبت آگهی</span>
+                                <span className="text-[7px] text-slate-400">ثبت آگهی رایگان</span>
+                            </button>
+                            <button onClick={() => { onSelectAction('all_market'); onClose(); }} className="p-4 bg-[#0f172a] border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center">
+                                <div className="w-10 h-10 rounded-full bg-skybrand-500/10 flex items-center justify-center mb-1"><i className="fas fa-store text-skybrand-400 text-lg"></i></div>
+                                <span className="text-xs text-slate-200 font-bold">بازار اکانت</span>
+                            </button>
+                            <button onClick={() => { onSelectAction('cart'); onClose(); }} className="col-span-2 p-4 bg-[#0f172a] border border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 text-center">
+                                <div className="w-10 h-10 rounded-full bg-skybrand-500/10 flex items-center justify-center mb-1"><i className="fas fa-shopping-bag text-skybrand-400 text-lg"></i></div>
+                                <span className="text-xs text-slate-200 font-bold">سبد خرید</span>
+                            </button>
+                        </div>
+                        <div className="mt-auto p-4 border-t border-white/5 space-y-2">
+                            <span className="text-[10px] text-slate-400 block text-center">پشتیبانی و مدیریت اکانت سنتر</span>
+                            <a href="https://t.me/AccCenter_Shop" target="_blank" className="flex items-center justify-between bg-skybrand-500/10 border border-skybrand-500/20 p-2.5 rounded-xl text-xs text-skybrand-300 font-mono">
+                                <span>تلگرام</span>
+                                <span>AccCenter_Shop@</span>
+                            </a>
+                            <a href="https://rubika.ir/AccCenter_Shop" target="_blank" className="flex items-center justify-between bg-purplebrand-500/10 border border-purplebrand-500/20 p-2.5 rounded-xl text-xs text-purplebrand-300 font-mono">
+                                <span>روبیکا</span>
+                                <span>AccCenter_Shop@</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const HomeHeroBanner = ({ onGoMarket }) => (
+            <div className="relative overflow-hidden mb-6 bg-gradient-to-b from-[#1e293b]/60 via-[#0f172a]/80 to-[#06080d] border-b border-white/5 rounded-b-[2.5rem] px-5 pt-6 pb-8 shadow-2xl">
+                <div className="flex items-center justify-between">
+                    <div className="w-[55%] text-right">
+                        <h2 className="text-[18px] font-black text-white leading-snug mb-3">
+                            <span className="text-purplebrand-400">از کلش تا کالاف؛</span> معامله‌ی امن و بی‌دردسر
+                        </h2>
+                        <p className="text-[11px] text-slate-300 leading-relaxed mb-4">
+                            وقتت رو تلف نکن! در اکانت سنتر می‌تونی بدون دردسر و با پشتیبانی مطمئن، اکانت‌های کلش آف کلنز، کلش رویال و کالاف دیوتی موبایل رو معامله کنی. همه‌چیز اینجاست...
+                        </p>
+                        <button onClick={onGoMarket} className="bg-transparent border border-white/20 text-white font-black text-xs px-4 py-2 rounded-xl shadow-lg hover:bg-white/5 transition-colors">همه آگهی‌ها</button>
+                    </div>
+                    <div className="w-[40%] flex justify-center items-center relative">
+                        <div className="absolute w-28 h-28 bg-purplebrand-500/20 rounded-full blur-xl"></div>
+                        <div className="w-32 h-32 rounded-3xl border border-purplebrand-500/40 p-2 relative shadow-[0_0_25px_rgba(168,85,247,0.3)] bg-gradient-to-tr from-[#0f172a] to-[#1e293b] flex items-center justify-center overflow-hidden">
+                            <svg viewBox="0 0 24 24" className="w-24 h-24 text-purplebrand-400 drop-shadow-[0_0_10px_rgba(192,132,252,0.5)]" fill="currentColor">
+                                <path d="M12 2a10 10 0 0 0-7.54 16.6l1.2-1.2A8 8 0 1 1 12 20a7.9 7.9 0 0 1-2.4-.38l-1.4 1.4A10 10 0 1 0 12 2m0 5a5 5 0 1 0 5 5 5 5 0 0 0-5-5m0 2a3 3 0 1 1-3 3 3 3 0 0 1 3-3m-7 11h2v3H5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AccountCard = ({ account, onSelect }) => {
+            const isSold = account.status === 'sold';
+            const isSwap = account.isSwap || account.price === 'طاق' || account.price === 0;
+            const thumb = account.lobbyImg || (account.images && account.images[0]) || 'https://placehold.co/800x480/0f172a/38bdf8?text=Account';
+            return (
+                <div onClick={() => !isSold && onSelect(account)} className="bg-[#0f172a] rounded-[24px] overflow-hidden relative flex flex-col cursor-pointer transition-transform hover:scale-[1.02] border border-white/5 shadow-lg">
+                    <div className="relative h-[150px] w-full overflow-hidden shrink-0 bg-black">
+                        <img src={thumb} alt={account.title} className={`w-full h-full object-cover ${isSold ? 'grayscale blur-sm opacity-50' : ''}`} />
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-2 py-1 rounded-lg border border-white/10">{account.code || '#12085'}</div>
+                        <div className="absolute top-2 left-2 bg-skybrand-500/80 text-black text-[9px] font-bold px-2 py-0.5 rounded">{account.game === 'codm' ? 'کالاف' : account.game === 'clash_of_clans' ? 'کلش کلنز' : 'کلش رویال'}</div>
+                        {isSold && <div className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="bg-red-600 text-white font-black text-xs px-4 py-2 rounded-xl shadow-lg">فروخته شد</span></div>}
+                    </div>
+                    <div className="p-3 text-center flex-1 flex flex-col">
+                        <div className="flex justify-between items-center mb-1 px-1">
+                            <span className="text-[9px] bg-purplebrand-500/20 text-purplebrand-300 px-2 py-0.5 rounded-full font-bold">{account.accountType || 'چنج'}</span>
+                            <span className="text-[9px] text-slate-400">سیف: {account.safeTime || 'دائمی'}</span>
+                        </div>
+                        <h3 className="font-bold text-sm text-white mb-1 truncate px-1">{account.title}</h3>
+                        <div className={`text-sm font-black mb-3 drop-shadow-md tracking-wide ${isSwap ? 'text-amber-400' : 'text-purplebrand-400'}`}>
+                            {formatPrice(account.price)} {isSwap ? '' : <span className="text-[9px] text-slate-400 font-normal">تومان</span>}
+                        </div>
+                        <div className="grid grid-cols-3 gap-1 mt-auto pt-2 border-t border-white/5 text-[10px] text-slate-300">
+                            <div className="bg-black/30 p-1.5 rounded-lg">لول: <strong className="text-white block">{account.level || 1}</strong></div>
+                            {account.game === 'codm' ? (
+                                <>
+                                    <div className="bg-black/30 p-1.5 rounded-lg">متیک: <strong className="text-white block">{account.mythicGuns || 0}</strong></div>
+                                    <div className="bg-black/30 p-1.5 rounded-lg">لجند: <strong className="text-white block">{account.legendGuns || 0}</strong></div>
+                                </>
+                            ) : (
+                                <div className="col-span-2 bg-black/30 p-1.5 rounded-lg">کاپ: <strong className="text-white block">{account.trophies || 0}</strong></div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AccountDetailView = ({ account, onBack, onBuyClick }) => {
+            const images = account.images && account.images.length > 0 ? account.images : [account.lobbyImg];
+            const [activeImg, setActiveImg] = useState(images[0]);
+            const isSwap = account.isSwap || account.price === 'طاق' || account.price === 0;
+
+            return (
+                <div className="min-h-screen pb-24 animate-fade-in bg-[#06080d]">
+                    <div className="p-4 flex items-center justify-between sticky top-0 bg-[#06080d]/90 backdrop-blur z-20 border-b border-white/5 mb-4">
+                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white"><i className="fas fa-arrow-left"></i></button>
+                        <span className="text-sm font-bold text-white">کد اکانت: {account.code}</span>
+                        <div className="w-10"></div>
+                    </div>
+                    <div className="px-4 mb-4">
+                        <div className="w-full h-64 rounded-[2rem] overflow-hidden border border-white/10 shadow-lg relative bg-[#0f172a]">
+                             <img src={activeImg} alt={account.title} className="w-full h-full object-cover" />
+                        </div>
+                        {images.length > 1 && (
+                            <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                                {images.map((img, idx) => (
+                                    <div key={idx} onClick={() => setActiveImg(img)} className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 cursor-pointer ${activeImg === img ? 'border-skybrand-400' : 'border-white/10'}`}>
+                                        <img src={img} className="w-full h-full object-cover" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-4 max-w-md mx-auto space-y-4 pt-0">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-black text-white mb-2">{account.title}</h2>
+                            <div className={`text-3xl font-black drop-shadow-md ${isSwap ? 'text-amber-400' : 'text-purplebrand-400'}`}>
+                                {formatPrice(account.price)} {isSwap ? '' : <span className="text-sm font-normal text-slate-400">تومان</span>}
+                            </div>
+                        </div>
+
+                        {/* اطلاعات تفکیک شده */}
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">بازی</span><span className="font-bold text-skybrand-400">{account.game === 'codm' ? 'کالاف دیوتی' : account.game === 'clash_of_clans' ? 'کلش آف کلنز' : 'کلش رویال'}</span></div>
+                            <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">لول</span><span className="font-bold text-white">{account.level}</span></div>
+                            
+                            {/* فیلدهای مشترک برای همه بازی‌ها که درخواست شده بود */}
+                            <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">وضعیت اکانت</span><span className="font-bold text-purplebrand-300">{account.accountType || 'چنج'}</span></div>
+                            <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">نوع سیو</span><span className="font-bold text-white text-[10px] leading-tight flex items-center justify-center h-full">{account.saveType || '-'}</span></div>
+                            <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex justify-between items-center px-6">
+                                <span className="text-slate-400 text-[11px]">زمان سیف (ضمانت)</span>
+                                <span className="font-bold text-amber-300">{account.safeTime || 'دائمی'}</span>
+                            </div>
+                            
+                            {account.game === 'codm' && (
+                                <>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">ریجن</span><span className="font-bold text-white">{account.region || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">UID</span><span className="font-bold text-white">{account.uid || '-'}</span></div>
+                                    <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex justify-between items-center px-6"><span className="text-slate-400 text-[11px]">تعداد CP</span><span className="font-bold text-skybrand-300">{account.cp || 0}</span></div>
+                                    
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد گان متیک</span><span className="font-bold text-white">{account.mythicGuns || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد گان لجند</span><span className="font-bold text-white">{account.legendGuns || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد گان اپیک</span><span className="font-bold text-white">{account.epicGuns || 0}</span></div>
+                                    
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد اسکین متیک</span><span className="font-bold text-white">{account.mythicSkins || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد اسکین لجند</span><span className="font-bold text-white">{account.legendSkins || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد اسکین اپیک</span><span className="font-bold text-white">{account.epicSkins || 0}</span></div>
+                                </>
+                            )}
+                            {account.game === 'clash_of_clans' && (
+                                <>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تان هال (TH)</span><span className="font-bold text-white">{account.townHall || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">کاپ</span><span className="font-bold text-white">{account.trophies || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد اسکین</span><span className="font-bold text-white">{account.townHallSkins || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تگ</span><span className="font-bold text-white" dir="ltr">{account.tag || '-'}</span></div>
+                                </>
+                            )}
+                            {account.game === 'clash_royale' && (
+                                <>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">منطقه</span><span className="font-bold text-white">{account.region || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">کاپ</span><span className="font-bold text-white">{account.trophies || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد کاراکتر</span><span className="font-bold text-white">{account.charactersCount || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تگ</span><span className="font-bold text-white" dir="ltr">{account.tag || '-'}</span></div>
+                                </>
+                            )}
+                        </div>
+
+                        {account.description && (
+                            <div className="card-bg p-4 rounded-2xl text-right">
+                                <span className="text-xs text-skybrand-400 font-bold block mb-1">توضیحات تکمیلی فروشنده:</span>
+                                <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">{account.description}</p>
+                            </div>
+                        )}
+
+                        <div className="pt-4 fixed bottom-4 left-4 right-4 z-30">
+                            <button onClick={onBuyClick} className="w-full bg-purplebrand-500 hover:bg-purplebrand-400 text-white py-4 rounded-2xl font-black text-base shadow-[0_4px_20px_rgba(168,85,247,0.4)] transition-colors">
+                                {isSwap ? 'درخواست معاوضه' : 'خرید اکانت'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CheckoutView = ({ account, onBack, onCompleteOrder }) => {
+            const [telegramId, setTelegramId] = useState('');
+            const [rubikaId, setRubikaId] = useState('');
+            const [phone, setPhone] = useState('');
+            const [step, setStep] = useState('form'); 
+            const [copied, setCopied] = useState(false);
+
+            const isSwap = account.isSwap || account.price === 'طاق' || account.price === 0;
+            const siteCommission = isSwap ? 0 : Math.round(account.price * 0.10);
+            const totalPayable = isSwap ? 0 : account.price + siteCommission;
+
+            const handleStartPayment = (e) => { 
+                e.preventDefault(); 
+                if(!telegramId || !phone) {
+                    alert('لطفاً شماره تماس و آیدی تلگرام را به صورت کامل وارد کنید.');
+                    return;
+                }
+                
+                if (isSwap) {
+                    handleCardPaymentFinished(); // Skip payment info for swap
+                } else {
+                    setStep('card_info'); 
+                }
+            };
+
+            const handleCardPaymentFinished = () => {
+                const newOrder = {
+                    id: Math.floor(Math.random() * 90000 + 10000).toString(),
+                    accountId: account.id, accountCode: account.code, accountTitle: account.title, price: totalPayable,
+                    isSwap: isSwap,
+                    telegramId, rubikaId, phone, date: new Date().toISOString(), status: 'pending'
+                };
+                try {
+                    const existingOrders = JSON.parse(localStorage.getItem('ac_orders') || '[]');
+                    localStorage.setItem('ac_orders', JSON.stringify([newOrder, ...existingOrders]));
+                    window.dispatchEvent(new Event('storage'));
+                    setStep('success');
+                } catch(e) {}
+            };
+
+            if (step === 'success') {
+                return (
+                    <div className="min-h-screen pb-20 p-4 max-w-md mx-auto animate-fade-in space-y-6 bg-[#06080d] text-center flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 text-3xl mb-2">
+                            <i className="fas fa-check"></i>
+                        </div>
+                        <h2 className="text-xl font-black text-white">درخواست شما با موفقیت ثبت شد</h2>
+                        <div className="card-bg p-5 rounded-3xl w-full space-y-4 text-right border border-white/5">
+                            <span className="text-xs text-amber-400 font-bold block text-center">
+                                {isSwap ? 'برای پیگیری معاوضه (طاق) به ادمین پیام دهید:' : 'از این بخش عکس بگیرید و برای ادمین بفرستید:'}
+                            </span>
+                            <a href="https://t.me/AGHIL_1208" target="_blank" className="flex items-center justify-between bg-black/40 p-3 rounded-2xl border border-white/5">
+                                <span className="text-xs text-skybrand-300 font-mono" dir="ltr">@AGHIL_1208</span>
+                                <span className="text-[10px] text-slate-400 flex items-center gap-1"><i className="fab fa-telegram text-skybrand-400"></i> تلگرام ادمین</span>
+                            </a>
+                            <a href="https://rubika.ir/AGHIL_120888" target="_blank" className="flex items-center justify-between bg-black/40 p-3 rounded-2xl border border-white/5">
+                                <span className="text-xs text-purple-300 font-mono" dir="ltr">@AGHIL_120888</span>
+                                <span className="text-[10px] text-slate-400 flex items-center gap-1"><i className="fas fa-comment-dots text-purple-400"></i> روبیکا ادمین</span>
+                            </a>
+                        </div>
+                        <button onClick={onCompleteOrder} className="w-full bg-skybrand-400 text-black py-4 rounded-2xl font-black text-sm shadow-lg">بازگشت به فروشگاه</button>
+                    </div>
+                );
+            }
+
+            if (step === 'card_info') {
+                return (
+                    <div className="min-h-screen pb-20 p-4 max-w-md mx-auto animate-fade-in space-y-4 bg-[#06080d]">
+                        <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                            <button onClick={() => setStep('form')} className="text-xs text-slate-400 hover:text-white">بازگشت</button>
+                            <span className="text-sm font-bold text-skybrand-400">اطلاعات واریز کارت به کارت</span>
+                        </div>
+                        <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-skybrand-500/50 p-6 rounded-3xl shadow-lg relative space-y-4">
+                            <div className="flex justify-between items-center text-xs text-slate-300">
+                                <span>بلوبانک / عضو شتاب</span>
+                                <i className="fas fa-wifi text-skybrand-400"></i>
+                            </div>
+                            <div className="text-center">
+                                <span className="text-[10px] text-slate-400 block mb-1">شماره کارت</span>
+                                <div className="flex items-center justify-between bg-black/40 p-3 rounded-2xl border border-white/5">
+                                    <button onClick={() => { navigator.clipboard.writeText('6219861450815674'); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="text-xs bg-white/10 text-white px-4 py-1.5 rounded-xl font-bold">{copied ? 'کپی شد' : 'کپی'}</button>
+                                    <span className="font-mono text-base tracking-widest text-white font-bold" dir="ltr">6219 8614 5081 5674</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                <span className="text-xs text-skybrand-400 font-bold">{formatPrice(totalPayable)} تومان</span>
+                                <span className="text-xs text-white font-bold">صاحب حساب: AGHIL ASMAR</span>
+                            </div>
+                        </div>
+
+                        <div className="card-bg p-5 rounded-3xl space-y-4 text-right border border-white/5">
+                            <span className="text-xs text-amber-400 font-bold block text-center">بعد از واریزی از فیش خود عکس بگیرید و برای ادمین ارسال کنید:</span>
+                            <a href="https://t.me/AGHIL_1208" target="_blank" className="flex items-center justify-between bg-black/40 p-3 rounded-2xl border border-white/5">
+                                <span className="text-xs text-skybrand-300 font-mono" dir="ltr">@AGHIL_1208</span>
+                                <span className="text-[10px] text-slate-400">تلگرام ادمین</span>
+                            </a>
+                            <a href="https://rubika.ir/AGHIL_120888" target="_blank" className="flex items-center justify-between bg-black/40 p-3 rounded-2xl border border-white/5">
+                                <span className="text-xs text-purple-300 font-mono" dir="ltr">@AGHIL_120888</span>
+                                <span className="text-[10px] text-slate-400">روبیکا ادمین</span>
+                            </a>
+                        </div>
+
+                        <button onClick={handleCardPaymentFinished} className="w-full bg-skybrand-400 text-black py-4 rounded-2xl font-black text-sm mt-4 shadow-lg">انجام دادم (ثبت نهایی)</button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen pb-20 animate-fade-in bg-[#06080d]">
+                    <div className="p-4 flex items-center justify-between sticky top-0 bg-[#06080d]/90 backdrop-blur z-20 mb-4 border-b border-white/5">
+                        <div className="w-8"></div>
+                        <h2 className="text-lg font-bold text-white">ثبت درخواست {isSwap ? 'طاق' : 'خرید امن'}</h2>
+                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white"><i className="fas fa-times"></i></button>
+                    </div>
+                    <div className="p-4 max-w-md mx-auto space-y-6">
+                        <div className="card-bg p-4 rounded-2xl border border-skybrand-500/30 flex items-center justify-between">
+                            <span className="text-xs text-skybrand-400">{isSwap ? 'درخواست معاوضه (طاق)' : 'کارت‌به‌کارت (مستقیم)'}</span>
+                            <div className="w-5 h-5 rounded-full border border-skybrand-400 flex items-center justify-center"><div className="w-2.5 h-2.5 rounded-full bg-skybrand-400"></div></div>
+                        </div>
+                        
+                        {!isSwap && (
+                            <div className="card-bg p-4 rounded-2xl space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-300"><span>قیمت اکانت</span><span>{formatPrice(account.price)} تومان</span></div>
+                                <div className="flex justify-between text-slate-300"><span>کمیسیون سایت (۱۰٪)</span><span>{formatPrice(siteCommission)} تومان</span></div>
+                                <div className="pt-2 border-t border-white/5 flex justify-between font-black text-sm text-skybrand-400"><span>مبلغ قابل پرداخت</span><span>{formatPrice(totalPayable)} تومان</span></div>
+                            </div>
+                        )}
+                        
+                        <form onSubmit={handleStartPayment} className="space-y-4">
+                            <div><label className="text-xs text-slate-400 block mb-2 px-1">آیدی تلگرام (اجباری)</label><input type="text" required value={telegramId} onChange={e => setTelegramId(e.target.value)} placeholder="@username" className="w-full bg-[#0f172a] border border-white/10 rounded-2xl p-4 text-left text-sm text-white" dir="ltr" /></div>
+                            <div><label className="text-xs text-slate-400 block mb-2 px-1">آیدی روبیکا (اختیاری)</label><input type="text" value={rubikaId} onChange={e => setRubikaId(e.target.value)} placeholder="@username" className="w-full bg-[#0f172a] border border-white/10 rounded-2xl p-4 text-left text-sm text-white" dir="ltr" /></div>
+                            <div><label className="text-xs text-slate-400 block mb-2 px-1">شماره تماس (اجباری)</label><input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="09xxxxxxxx" className="w-full bg-[#0f172a] border border-white/10 rounded-2xl p-4 text-left text-sm text-white" dir="ltr" /></div>
+                            <button type="submit" className="w-full bg-skybrand-400 text-black py-4 rounded-2xl font-black text-base mt-6">
+                                {isSwap ? 'ثبت درخواست طاق' : 'ادامه پرداخت کارت‌به‌کارت'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddAdView = ({ onBack, onSubmitAd }) => {
+            const deviceId = getOrCreateDeviceId();
+            const lobbyFileRef = useRef(null);
+            const charsFileRef = useRef(null);
+            const gunsFileRef = useRef(null);
+
+            const [formData, setFormData] = useState({
+                game: 'codm', fullName: '', accountName: '', level: '', price: '', region: 'هند',
+                saveType: 'اکتیویژن', safeTime: 'دائمی', accountType: 'چنج', isSwap: false, // Updated and new fields
+                epicGuns: '', legendGuns: '', mythicGuns: '', epicSkins: '', legendSkins: '', mythicSkins: '',
+                uid: '', cp: '', charactersCount: '', trophies: '', townHall: '', townHallSkins: '', tag: '', 
+                lobbyImg: '', charsImg: '', gunsImg: '', images: [], phone: '', telegramId: '', rubikaId: '', nightPassword: '',
+                description: ''
+            });
+
+            // Persist form data on change
+            useEffect(() => {
+                const savedDraft = localStorage.getItem('ac_ad_draft');
+                if (savedDraft) {
+                    try { setFormData(JSON.parse(savedDraft)); } catch (e) {}
+                }
+            }, []);
+
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setFormData(prev => {
+                    const updated = { ...prev, [name]: type === 'checkbox' ? checked : value };
+                    localStorage.setItem('ac_ad_draft', JSON.stringify(updated));
+                    return updated;
+                });
+            };
+
+            const handleImageUpload = (e, fieldName) => {
+                if (e.target.files && e.target.files[0]) {
+                    compressImage(e.target.files[0], (compressed) => {
+                        setFormData(prev => {
+                            const updated = { ...prev, [fieldName]: compressed };
+                            const imgs = [updated.lobbyImg, updated.charsImg, updated.gunsImg].filter(Boolean);
+                            updated.images = imgs.length > 0 ? imgs : ['https://placehold.co/800x480/0f172a/38bdf8?text=Account'];
+                            localStorage.setItem('ac_ad_draft', JSON.stringify(updated));
+                            return updated;
+                        });
+                    });
+                }
+            };
+
+            const handleSubmitForm = (e) => {
+                e.preventDefault();
+                if (!formData.lobbyImg) {
+                    alert('لطفاً حداقل عکس صفحه لابی را آپلود کنید.');
+                    return;
+                }
+
+                if (formData.game === 'clash_royale') {
+                    if (!formData.tag || formData.tag.length !== 11 || !formData.tag.startsWith('#')) {
+                        alert('تگ کلش رویال باید دقیقاً ۱۱ کاراکتر باشد و حتماً با علامت # شروع شود.');
+                        return;
+                    }
+                }
+                if (formData.game === 'clash_of_clans') {
+                    if (!formData.tag || formData.tag.length !== 10 || !formData.tag.startsWith('#')) {
+                        alert('تگ کلش آف کلنز باید دقیقاً ۱۰ کاراکتر باشد و حتماً با علامت # شروع شود.');
+                        return;
+                    }
+                }
+
+                const randomId = Math.floor(Math.random() * 9000 + 10000);
+                const adDataToSubmit = {
+                    ...formData,
+                    id: String(randomId),
+                    code: `#${randomId}`,
+                    title: formData.accountName,
+                    sellerName: 'کاربر اکانت سنتر',
+                    status: 'approved',
+                    price: formData.isSwap ? 'طاق' : (Number(formData.price) || 0),
+                    level: Number(formData.level) || 1,
+                    ownerId: deviceId,
+                    images: formData.images.length > 0 ? formData.images : ['https://placehold.co/800x480/0f172a/38bdf8?text=Account']
+                };
+
+                onSubmitAd(adDataToSubmit);
+                localStorage.removeItem('ac_ad_draft'); // Clear draft after successful submit
+            };
+
+            const currentThumb = formData.lobbyImg || 'https://placehold.co/800x480/0f172a/38bdf8?text=Preview';
+
+            return (
+                <div className="min-h-screen pb-20 animate-fade-in bg-[#06080d]">
+                    <div className="p-4 flex items-center justify-between sticky top-0 bg-[#06080d]/90 backdrop-blur z-20 mb-2 border-b border-white/5">
+                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white"><i className="fas fa-arrow-left"></i></button>
+                        <h2 className="text-base font-bold text-white">ثبت آگهی</h2>
+                        <div className="w-10"></div>
+                    </div>
+                    <div className="p-4 max-w-md mx-auto space-y-6">
+                        <form onSubmit={handleSubmitForm} className="space-y-4">
+                            <div className="bg-[#0f172a] p-5 rounded-3xl border border-white/5 space-y-4 text-right">
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">نام و نام خانوادگی (این بخش توی آگهی نشون داده نمیشه)</label>
+                                    <input name="fullName" required value={formData.fullName} onChange={handleChange} placeholder="نام کامل شما" className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm text-white" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">نوع بازی</label>
+                                    <select name="game" value={formData.game} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm text-white">
+                                        <option value="codm">کالاف دیوتی موبایل</option>
+                                        <option value="clash_of_clans">کلش آف کلنز</option>
+                                        <option value="clash_royale">کلش رویال</option>
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><label className="text-xs text-slate-400 block mb-1">اسم اکانت</label><input name="accountName" required value={formData.accountName} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm text-white" /></div>
+                                    <div><label className="text-xs text-slate-400 block mb-1">لول</label><input name="level" type="number" required value={formData.level} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm text-white" /></div>
+                                </div>
+                                
+                                {/* New Toggle for Swap */}
+                                <div className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-2xl">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-white">درخواست معاوضه (طاق)</span>
+                                        <span className="text-[10px] text-slate-400">به جای فروش، اکانت را طاق می‌زنم</span>
+                                    </div>
+                                    <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" name="isSwap" id="toggleSwap" checked={formData.isSwap} onChange={handleChange} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                        <label htmlFor="toggleSwap" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">قیمت (تومان)</label>
+                                    <input name="price" type="number" required={!formData.isSwap} disabled={formData.isSwap} value={formData.isSwap ? '' : formData.price} onChange={handleChange} placeholder={formData.isSwap ? 'طاق (بدون قیمت)' : ''} className={`w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-sm text-white ${formData.isSwap ? 'opacity-50 cursor-not-allowed' : ''}`} />
+                                </div>
+                                
+                                {/* Common fields for all games */}
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
+                                    <div>
+                                        <label className="text-[11px] text-slate-400 block mb-1">وضعیت اکانت</label>
+                                        <select name="accountType" value={formData.accountType} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white">
+                                            <option value="چنج">چنج (تضمینی)</option>
+                                            <option value="کرکی">کرکی</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] text-slate-400 block mb-1">زمان سیف (ضمانت)</label>
+                                        <select name="safeTime" value={formData.safeTime} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white">
+                                            <option value="دائمی">دائمی</option>
+                                            <option value="یک سال">یک سال</option>
+                                            <option value="شیش ماه">شیش ماه</option>
+                                            <option value="سه ماه">سه ماه</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="text-[11px] text-slate-400 block mb-1">نوع سیو (می‌توانید سیو ترکیبی انتخاب کنید)</label>
+                                        <select name="saveType" value={formData.saveType} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white leading-relaxed">
+                                            <option value="گوگل">گوگل</option>
+                                            <option value="اکتیویژن">اکتیویژن</option>
+                                            <option value="فیس‌بوک">فیس‌بوک</option>
+                                            <option value="اپل">اپل</option>
+                                            <option value="لاین">لاین</option>
+                                            <option value="گوگل و اکتیویژن">گوگل و اکتیویژن</option>
+                                            <option value="گوگل و فیس‌بوک">گوگل و فیس‌بوک</option>
+                                            <option value="گوگل و اپل">گوگل و اپل</option>
+                                            <option value="اکتیویژن و فیس‌بوک">اکتیویژن و فیس‌بوک</option>
+                                            <option value="اکتیویژن و اپل">اکتیویژن و اپل</option>
+                                            <option value="فیس‌بوک و اپل">فیس‌بوک و اپل</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {formData.game === 'codm' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <h4 className="text-xs font-bold text-skybrand-400">اطلاعات اختصاصی کالاف دیوتی موبایل</h4>
+                                        <div>
+                                            <label className="text-[11px] text-slate-400 block mb-1">ریجن (Region)</label>
+                                            <select name="region" value={formData.region} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white">
+                                                <option value="هند">هند (India)</option>
+                                                <option value="ایران">ایران (Iran)</option>
+                                                <option value="اروپا">اروپا (Europe)</option>
+                                                <option value="آمریکا">آمریکا (US)</option>
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان اپیک</label><input name="epicGuns" type="number" required value={formData.epicGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان لجند</label><input name="legendGuns" type="number" required value={formData.legendGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان متیک</label><input name="mythicGuns" type="number" required value={formData.mythicGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد اسکین اپیک</label><input name="epicSkins" type="number" required value={formData.epicSkins} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد اسکین لجند</label><input name="legendSkins" type="number" required value={formData.legendSkins} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد اسکین متیک</label><input name="mythicSkins" type="number" required value={formData.mythicSkins} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">UID</label><input name="uid" required value={formData.uid} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" dir="ltr" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد CP</label><input name="cp" type="number" required value={formData.cp} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.game === 'clash_royale' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <h4 className="text-xs font-bold text-skybrand-400">اطلاعات اختصاصی کلش رویال</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد کاراکتر</label><input name="charactersCount" type="number" required value={formData.charactersCount} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">منطقه</label><input name="region" required value={formData.region} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد کاپ</label><input name="trophies" type="number" required value={formData.trophies} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div>
+                                                <label className="text-[11px] text-slate-400">تگ (۱۱ کاراکتر با #)</label>
+                                                <input name="tag" required value={formData.tag} onChange={handleChange} placeholder="#xxxxxxxxx" maxLength={11} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" dir="ltr" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.game === 'clash_of_clans' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <h4 className="text-xs font-bold text-skybrand-400">اطلاعات اختصاصی کلش آف کلنز</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[10px] text-slate-400">تان هال (TH)</label><input name="townHall" type="number" required value={formData.townHall} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[10px] text-slate-400">تعداد کاپ</label><input name="trophies" type="number" required value={formData.trophies} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[10px] text-slate-400">تعداد اسکین</label><input name="townHallSkins" type="number" required value={formData.townHallSkins} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-400">تگ (۱۰ کاراکتر با #)</label>
+                                                <input name="tag" required value={formData.tag} onChange={handleChange} placeholder="#xxxxxxx" maxLength={10} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" dir="ltr" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-3 pt-3 border-t border-white/5">
+                                    <h4 className="text-xs font-bold text-purplebrand-400">بارگذاری تصاویر اکانت</h4>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">عکس از صفحه لابی (اجباری)</label>
+                                        <div onClick={() => lobbyFileRef.current.click()} className="w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-center cursor-pointer text-xs text-purplebrand-400 font-bold">
+                                            {formData.lobbyImg ? '✓ عکس لابی انتخاب شد (تغییر)' : 'انتخاب عکس لابی'}
+                                        </div>
+                                        <input type="file" ref={lobbyFileRef} accept="image/*" onChange={(e) => handleImageUpload(e, 'lobbyImg')} className="hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">عکس دوم (اختیاری)</label>
+                                        <div onClick={() => charsFileRef.current.click()} className="w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-center cursor-pointer text-xs text-purplebrand-400 font-bold">
+                                            {formData.charsImg ? '✓ عکس دوم انتخاب شد (تغییر)' : 'انتخاب عکس دوم'}
+                                        </div>
+                                        <input type="file" ref={charsFileRef} accept="image/*" onChange={(e) => handleImageUpload(e, 'charsImg')} className="hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">عکس سوم (اختیاری)</label>
+                                        <div onClick={() => gunsFileRef.current.click()} className="w-full bg-black/40 border border-white/10 rounded-2xl p-3 text-center cursor-pointer text-xs text-purplebrand-400 font-bold">
+                                            {formData.gunsImg ? '✓ عکس سوم انتخاب شد (تغییر)' : 'انتخاب عکس سوم'}
+                                        </div>
+                                        <input type="file" ref={gunsFileRef} accept="image/*" onChange={(e) => handleImageUpload(e, 'gunsImg')} className="hidden" />
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-3 pt-3 border-t border-white/5">
+                                    <h4 className="text-xs font-bold text-skybrand-400">توضیحات تکمیلی</h4>
+                                    <textarea name="description" value={formData.description} onChange={handleChange} placeholder="توضیحات بیشتر در مورد اکانت، بتل پس‌ها، تغییر نام و..." rows="3" className="w-full bg-black/40 border border-white/5 rounded-2xl p-3 text-xs text-white"></textarea>
+                                </div>
+
+                                <div className="space-y-3 pt-3 border-t border-white/5">
+                                    <h4 className="text-xs font-bold text-skybrand-400">اطلاعات ارتباطی فروشنده</h4>
+                                    <div><label className="text-xs text-slate-400 block mb-1">شماره تماس</label><input name="phone" required value={formData.phone} onChange={handleChange} placeholder="09xxxxxxxx" className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white" dir="ltr" /></div>
+                                    <div><label className="text-xs text-slate-400 block mb-1">آیدی تلگرام</label><input name="telegramId" required value={formData.telegramId} onChange={handleChange} placeholder="@username" className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white" dir="ltr" /></div>
+                                    <div><label className="text-xs text-slate-400 block mb-1">رمز شب (امنیتی)</label><input name="nightPassword" required value={formData.nightPassword} onChange={handleChange} className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-sm text-amber-300 font-bold" /></div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <h3 className="text-xs text-slate-400 font-bold mb-3 text-center">پیش‌نمایش آگهی</h3>
+                                <div className="bg-[#0f172a] rounded-[24px] overflow-hidden border border-white/5 shadow-lg max-w-xs mx-auto">
+                                    <div className="h-36 bg-black relative">
+                                        <img src={currentThumb} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="p-3 text-center">
+                                        <h4 className="font-bold text-white text-sm mb-1">{formData.accountName || 'اسم اکانت'}</h4>
+                                        <div className={`font-black text-sm ${formData.isSwap ? 'text-amber-400' : 'text-purplebrand-400'}`}>
+                                            {formData.isSwap ? 'طاق (معاوضه)' : (formData.price ? formatPrice(formData.price) + ' تومان' : '۰ تومان')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" className="w-full bg-skybrand-400 text-black py-4 rounded-3xl font-black text-sm shadow-lg mt-4">
+                                ثبت آگهی ( ۱۰ درصد مبلغ فروش متعلق به ادمین می‌باشد )
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const MarketView = ({ accounts, onSelectAccount }) => {
+            const [selectedFilter, setSelectedFilter] = useState('all');
+
+            const filteredAccounts = useMemo(() => {
+                if (selectedFilter === 'all') return accounts;
+                if (selectedFilter === 'codm') return accounts.filter(a => a.game === 'codm');
+                if (selectedFilter === 'coc') return accounts.filter(a => a.game === 'clash_of_clans');
+                if (selectedFilter === 'cr') return accounts.filter(a => a.game === 'clash_royale');
+                return accounts;
+            }, [accounts, selectedFilter]);
+
+            return (
+                <div className="animate-fade-in pb-12">
+                    <div className="relative overflow-hidden mb-6 bg-gradient-to-b from-[#1e293b]/60 via-[#0f172a]/80 to-[#06080d] border-b border-white/5 rounded-b-[2.5rem] px-5 pt-6 pb-8 shadow-2xl text-right">
+                        <span className="text-[10px] text-purplebrand-400 font-bold block mb-1">بازار اکانت سنتر</span>
+                        <h2 className="text-[20px] font-black text-white leading-snug mb-2">خرید و فروش اکانت‌های گیمینگ</h2>
+                        <p className="text-[11px] text-slate-300 leading-relaxed mb-4">آگهی‌ها با اطلاعات کامل شامل ریجن، لول، گان‌ها، کاپ و CP نمایش داده می‌شوند.</p>
+                        
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pt-2">
+                            <button onClick={() => setSelectedFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'all' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>همه</button>
+                            <button onClick={() => setSelectedFilter('codm')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'codm' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کالاف دیوتی موبایل</button>
+                            <button onClick={() => setSelectedFilter('coc')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'coc' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کلش آف کلنز</button>
+                            <button onClick={() => setSelectedFilter('cr')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'cr' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کلش رویال</button>
+                        </div>
+                    </div>
+                    <div className="px-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            {filteredAccounts.map(acc => <AccountCard key={acc.id} account={acc} onSelect={onSelectAccount} />)}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [accounts, setAccounts] = useState([]);
+            const [view, setView] = useState('home');
+            const [selectedAccount, setSelectedAccount] = useState(null);
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            const [cartCount, setCartCount] = useState(0);
+
+            const loadAccounts = () => {
+                try {
+                    const saved = localStorage.getItem('ac_saved_accounts');
+                    if (saved) {
+                        setAccounts(JSON.parse(saved));
+                    } else {
+                        setAccounts(INITIAL_ACCOUNTS);
+                        localStorage.setItem('ac_saved_accounts', JSON.stringify(INITIAL_ACCOUNTS));
+                    }
+                } catch(e) {}
+            };
+
+            useEffect(() => {
+                loadAccounts();
+                const interval = setInterval(loadAccounts, 1000);
+                window.addEventListener('storage', loadAccounts);
+                return () => { window.removeEventListener('storage', loadAccounts); clearInterval(interval); };
+            }, []);
+
+            const saveToDB = (newAccounts) => {
+                try {
+                    localStorage.setItem('ac_saved_accounts', JSON.stringify(newAccounts));
+                    setAccounts(newAccounts);
+                    window.dispatchEvent(new Event('storage'));
+                } catch(e) {}
+            };
+
+            const handleSubmitAd = (adData) => {
+                saveToDB([adData, ...accounts]);
+                alert('آگهی شما با موفقیت ثبت شد.');
+                setView('market');
+            };
+
+            return (
+                <div className="min-h-screen text-slate-100 flex flex-col font-sans">
+                    <Header cartCount={cartCount} onOpenMenu={() => setIsMenuOpen(true)} onGoHome={() => setView('home')} />
+                    <MobileNavDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onSelectAction={(act) => {
+                        if (act === 'all_market') setView('market');
+                        else if (act === 'add_ad') setView('add_ad');
+                        else if (act === 'cart') setView('checkout');
+                    }} />
+
+                    <main className="flex-1 pb-16 w-full max-w-md mx-auto">
+                        {view === 'home' && (
+                            <div className="animate-fade-in">
+                                <HomeHeroBanner onGoMarket={() => setView('market')} />
+                                <div className="px-4 mb-8">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-base font-black text-white">اکانت‌های داغ</h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {accounts.map(acc => <AccountCard key={acc.id} account={acc} onSelect={(acc) => { setSelectedAccount(acc); setView('detail'); }} />)}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {view === 'market' && <MarketView accounts={accounts} onSelectAccount={(acc) => { setSelectedAccount(acc); setView('detail'); }} />}
+                        {view === 'detail' && selectedAccount && <AccountDetailView account={selectedAccount} onBack={() => setView('market')} onBuyClick={() => { setCartCount(1); setView('checkout'); }} />}
+                        {view === 'checkout' && selectedAccount && <CheckoutView account={selectedAccount} onBack={() => setView('detail')} onCompleteOrder={() => { setCartCount(0); setView('home'); }} />}
+                        {view === 'add_ad' && <AddAdView onBack={() => setView('market')} onSubmitAd={handleSubmitAd} />}
+                    </main>
+                </div>
+            );
+        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
