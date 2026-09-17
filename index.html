@@ -785,47 +785,46 @@
             );
         };
 
-        const App = () => {
-            const [accounts, setAccounts] = useState([]);
+                    const [accounts, setAccounts] = useState([]);
             const [view, setView] = useState('home');
             const [selectedAccount, setSelectedAccount] = useState(null);
             const [isMenuOpen, setIsMenuOpen] = useState(false);
             const [cartCount, setCartCount] = useState(0);
 
-            const loadAccounts = () => {
+            const loadAccounts = async () => {
                 try {
-                    const saved = localStorage.getItem('ac_saved_accounts');
-                    if (saved) {
-                        setAccounts(JSON.parse(saved));
-                    } else {
-                        setAccounts(INITIAL_ACCOUNTS);
-                        localStorage.setItem('ac_saved_accounts', JSON.stringify(INITIAL_ACCOUNTS));
+                    const res = await fetch(`${API_URL}${DB_BASKET}`);
+                    if(res.ok) {
+                        const data = await res.json();
+                        setAccounts(data.accounts || []);
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.log("در حال تلاش برای اتصال...");
+                }
             };
 
             useEffect(() => {
                 loadAccounts();
-                const interval = setInterval(loadAccounts, 1000);
-                window.addEventListener('storage', loadAccounts);
-                return () => { window.removeEventListener('storage', loadAccounts); clearInterval(interval); };
+                const interval = setInterval(loadAccounts, 3500); // آپدیت خودکار هر 3 ثانیه
+                return () => clearInterval(interval);
             }, []);
 
-            const saveToDB = (newAccounts) => {
+            const handleSubmitAd = async (adData) => {
+                const updatedAccounts = [adData, ...accounts];
+                setAccounts(updatedAccounts); // تغییر موقت برای سرعت بالای نمایش
+                
                 try {
-                    localStorage.setItem('ac_saved_accounts', JSON.stringify(newAccounts));
-                    setAccounts(newAccounts);
-                    window.dispatchEvent(new Event('storage'));
-                } catch(e) {}
+                    await fetch(`${API_URL}${DB_BASKET}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ accounts: updatedAccounts })
+                    });
+                    setView('market');
+                } catch(e) {
+                    alert('خطا در ارتباط با سرور.');
+                }
             };
 
-            const handleSubmitAd = (adData) => {
-                saveToDB([adData, ...accounts]);
-                alert('آگهی شما با موفقیت ثبت شد.');
-                setView('market');
-            };
-
-            return (
                 <div className="min-h-screen text-slate-100 flex flex-col font-sans">
                     <Header cartCount={cartCount} onOpenMenu={() => setIsMenuOpen(true)} onGoHome={() => setView('home')} />
                     <MobileNavDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onSelectAction={(act) => {
