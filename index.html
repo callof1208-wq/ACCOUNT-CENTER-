@@ -192,7 +192,7 @@
                     <div className="relative h-[150px] w-full overflow-hidden shrink-0 bg-black">
                         <img src={thumb} alt={account.title} className={`w-full h-full object-cover ${isSold ? 'grayscale blur-sm opacity-50' : ''}`} />
                         <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-2 py-1 rounded-lg border border-white/10">{account.code || '#12085'}</div>
-                        <div className="absolute top-2 left-2 bg-skybrand-500/80 text-black text-[9px] font-bold px-2 py-0.5 rounded">{account.game === 'codm' ? 'کالاف' : account.game === 'clash_of_clans' ? 'کلش کلنز' : 'کلش رویال'}</div>
+                        <div className="absolute top-2 left-2 bg-skybrand-500/80 text-black text-[9px] font-bold px-2 py-0.5 rounded">{account.game === 'codm' ? 'کالاف' : account.game === 'free_fire' ? 'فری فایر' : account.game === 'clash_of_clans' ? 'کلش کلنز' : 'کلش رویال'}</div>
                         {isSold && <div className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="bg-red-600 text-white font-black text-xs px-4 py-2 rounded-xl shadow-lg">فروخته شد</span></div>}
                     </div>
                     <div className="p-3 text-center flex-1 flex flex-col">
@@ -282,7 +282,7 @@
                                     <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد اسکین اپیک</span><span className="font-bold text-white">{account.epicSkins || 0}</span></div>
                                 </>
                             )}
-                            {account.game === 'clash_of_clans' && (
+                            {account.game === 'clash_of_clans' && ( 
                                 <>
                                     <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تان هال (TH)</span><span className="font-bold text-white">{account.townHall || '-'}</span></div>
                                     <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">کاپ</span><span className="font-bold text-white">{account.trophies || 0}</span></div>
@@ -299,7 +299,39 @@
                                 </>
                             )}
                         </div>
-
+                            {account.game === 'clash_royale' && (
+                                <>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">منطقه</span><span className="font-bold text-white">{account.region || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">کاپ</span><span className="font-bold text-white">{account.trophies || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد کاراکتر</span><span className="font-bold text-white">{account.charactersCount || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تگ</span><span className="font-bold text-white" dir="ltr">{account.tag || '-'}</span></div>
+                                </>
+                            )}
+                            {account.game === 'free_fire' && (
+                                <>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">ریجن</span><span className="font-bold text-white">{account.ffRegion || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">UID</span><span className="font-bold text-white">{account.uid || '-'}</span></div>
+                                    
+                                    <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex flex-col px-4 space-y-2">
+                                        <div className="flex justify-between items-center border-b border-white/5 pb-2"><span className="text-slate-400 text-[11px]">سیو اول</span><span className="font-bold text-skybrand-300 text-xs">{account.ffSave1 || '-'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-slate-400 text-[11px]">سیو دوم</span><span className="font-bold text-purplebrand-300 text-xs">{account.ffSave2 || '-'}</span></div>
+                                    </div>
+                                    
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">کارت نام</span><span className="font-bold text-white">{account.ffNameCard || '-'}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">تعداد جم</span><span className="font-bold text-white">{account.ffGems || 0}</span></div>
+                                    <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex justify-between items-center px-6"><span className="text-slate-400 text-[11px]">تعداد گلد (سکه)</span><span className="font-bold text-amber-300">{account.ffGold || 0}</span></div>
+                                    
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">گان متیک</span><span className="font-bold text-white">{account.mythicGuns || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">گان لجند</span><span className="font-bold text-white">{account.legendGuns || 0}</span></div>
+                                    <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex justify-between items-center px-6"><span className="text-slate-400 text-[11px]">گان اپیک</span><span className="font-bold text-white">{account.epicGuns || 0}</span></div>
+                                    
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">ست متیک</span><span className="font-bold text-white">{account.mythicSets || 0}</span></div>
+                                    <div className="card-bg p-4 rounded-3xl text-center"><span className="text-slate-400 text-[11px] block mb-1">ست لجند</span><span className="font-bold text-white">{account.legendSets || 0}</span></div>
+                                    <div className="col-span-2 card-bg p-4 rounded-3xl text-center flex justify-between items-center px-6"><span className="text-slate-400 text-[11px]">ست اپیک</span><span className="font-bold text-white">{account.epicSets || 0}</span></div>
+                                </>
+                            )}
+                        </div>
+                    
                         {account.description && (
                             <div className="card-bg p-4 rounded-2xl text-right">
                                 <span className="text-xs text-skybrand-400 font-bold block mb-1">توضیحات تکمیلی فروشنده:</span>
@@ -464,11 +496,14 @@
             const charsFileRef = useRef(null);
             const gunsFileRef = useRef(null);
 
-            const [formData, setFormData] = useState({
+                        const [formData, setFormData] = useState({
                 game: 'codm', fullName: '', accountName: '', level: '', price: '', region: 'هند',
-                saveType: 'اکتیویژن', safeTime: 'دائمی', accountType: 'چنج', isSwap: false, // Updated and new fields
+                saveType: 'اکتیویژن', safeTime: 'دائمی', accountType: 'چنج', isSwap: false, 
                 epicGuns: '', legendGuns: '', mythicGuns: '', epicSkins: '', legendSkins: '', mythicSkins: '',
-                uid: '', cp: '', charactersCount: '', trophies: '', townHall: '', townHallSkins: '', tag: '', 
+                uid: '', cp: '', charactersCount: '', trophies: '', townHall: '', townHallSkins: '', tag: '', supercell: 'سالم',
+                // متغیرهای فری فایر
+                ffGems: '', ffGold: '', ffNameCard: 'ندارد', ffRegion: 'خاورمیانه', ffSave1: 'گوگل', ffSave2: 'متصل نمی باشد',
+                epicSets: '', legendSets: '', mythicSets: '',
                 lobbyImg: '', charsImg: '', gunsImg: '', images: [], phone: '', telegramId: '', rubikaId: '', nightPassword: '',
                 description: ''
             });
@@ -564,6 +599,9 @@
                                         <option value="codm">کالاف دیوتی موبایل</option>
                                         <option value="clash_of_clans">کلش آف کلنز</option>
                                         <option value="clash_royale">کلش رویال</option>
+                                                                                <option value="free_fire">فری فایر (Free Fire)</option>
+                                    
+                
                                     </select>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -687,7 +725,65 @@
                                             </div>
                                         </div>
                                     </div>
+                                
+                
+                                {formData.game === 'free_fire' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <h4 className="text-xs font-bold text-skybrand-400">اطلاعات اختصاصی فری فایر</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[11px] text-slate-400 block mb-1">ریجن</label>
+                                                <select name="ffRegion" value={formData.ffRegion} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white">
+                                                    <option value="خاورمیانه">خاورمیانه</option>
+                                                    <option value="اروپا">اروپا</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[11px] text-slate-400 block mb-1">کارت تغییر نام</label>
+                                                <select name="ffNameCard" value={formData.ffNameCard} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white">
+                                                    <option value="ندارد">ندارد</option>
+                                                    <option value="دارد">دارد</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-[11px] text-slate-400 block mb-1">اول روش متصل به بازی</label>
+                                                <select name="ffSave1" value={formData.ffSave1} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-[10px] text-white">
+                                                    <option value="گوگل">گوگل</option><option value="فیس بوک">فیس بوک</option><option value="وی کی">وی کی</option><option value="اپل آی دی">اپل آی دی</option><option value="مهمان">مهمان</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[11px] text-slate-400 block mb-1">دوم روش متصل به بازی</label>
+                                                <select name="ffSave2" value={formData.ffSave2} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-[10px] text-white">
+                                                    <option value="متصل نمی باشد">متصل نمی باشد</option><option value="گوگل">گوگل</option><option value="فیس بوک">فیس بوک</option><option value="وی کی">وی کی</option><option value="اپل آی دی">اپل آی دی</option><option value="مهمان">مهمان</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">UID</label><input name="uid" required value={formData.uid} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" dir="ltr" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد جم</label><input name="ffGems" type="number" required value={formData.ffGems} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد گلد (سکه)</label><input name="ffGold" type="number" required value={formData.ffGold} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان اپیک</label><input name="epicGuns" type="number" required value={formData.epicGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان لجند</label><input name="legendGuns" type="number" required value={formData.legendGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد گان متیک</label><input name="mythicGuns" type="number" required value={formData.mythicGuns} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="text-[11px] text-slate-400">تعداد ست اپیک</label><input name="epicSets" type="number" required value={formData.epicSets} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                            <div><label className="text-[11px] text-slate-400">تعداد ست لجند</label><input name="legendSets" type="number" required value={formData.legendSets} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                        </div>
+                                        <div><label className="text-[11px] text-slate-400">تعداد ست متیک</label><input name="mythicSets" type="number" required value={formData.mythicSets} onChange={handleChange} className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs text-white" /></div>
+                                    </div>
                                 )}
+                                
+    )}
+                            
 
                                 <div className="space-y-3 pt-3 border-t border-white/5">
                                     <h4 className="text-xs font-bold text-purplebrand-400">بارگذاری تصاویر اکانت</h4>
@@ -754,13 +850,15 @@
         const MarketView = ({ accounts, onSelectAccount }) => {
             const [selectedFilter, setSelectedFilter] = useState('all');
 
-            const filteredAccounts = useMemo(() => {
+                        const filteredAccounts = useMemo(() => {
                 if (selectedFilter === 'all') return accounts;
                 if (selectedFilter === 'codm') return accounts.filter(a => a.game === 'codm');
+                if (selectedFilter === 'free_fire') return accounts.filter(a => a.game === 'free_fire');
                 if (selectedFilter === 'coc') return accounts.filter(a => a.game === 'clash_of_clans');
                 if (selectedFilter === 'cr') return accounts.filter(a => a.game === 'clash_royale');
                 return accounts;
             }, [accounts, selectedFilter]);
+
 
             return (
                 <div className="animate-fade-in pb-12">
@@ -769,9 +867,9 @@
                         <h2 className="text-[20px] font-black text-white leading-snug mb-2">خرید و فروش اکانت‌های گیمینگ</h2>
                         <p className="text-[11px] text-slate-300 leading-relaxed mb-4">آگهی‌ها با اطلاعات کامل شامل ریجن، لول، گان‌ها، کاپ و CP نمایش داده می‌شوند.</p>
                         
-                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pt-2">
-                            <button onClick={() => setSelectedFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'all' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>همه</button>
-                            <button onClick={() => setSelectedFilter('codm')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'codm' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کالاف دیوتی موبایل</button>
+                                                    <button onClick={() => setSelectedFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'all' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>همه</button>
+                            <button onClick={() => setSelectedFilter('codm')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'codm' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کالاف دیوتی</button>
+                            <button onClick={() => setSelectedFilter('free_fire')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'free_fire' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>فری فایر</button>
                             <button onClick={() => setSelectedFilter('coc')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'coc' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کلش آف کلنز</button>
                             <button onClick={() => setSelectedFilter('cr')} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${selectedFilter === 'cr' ? 'bg-skybrand-400 text-black shadow-lg' : 'bg-white/5 text-slate-300 border border-white/10'}`}>کلش رویال</button>
                         </div>
